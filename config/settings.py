@@ -27,6 +27,7 @@ class Settings:
 
     # Activation
     ACTIVATION_KEY = os.getenv("ACTIVATION_KEY", "<ctrl>+<alt>+j")
+
     # Safety
     DANGEROUS_COMMANDS = ["rm -rf", "format", "del /f", "rd /s", "sudo", ":(){ :|:& };:"]
     REQUIRE_CONFIRMATION = ["shutdown", "restart", "delete", "remove", "uninstall"]
@@ -38,8 +39,10 @@ class Settings:
     LISTEN_TIMEOUT = 5
     PHRASE_TIME_LIMIT = 15
 
+    # TTS налаштування
     TTS_PROVIDER = os.getenv("TTS_PROVIDER", "local")  # local або openai
-    TTS_VOICE_SPEED = int(os.getenv("TTS_VOICE_SPEED", "180"))  # Швидкість мови
-    TTS_VOICE_PITCH = int(os.getenv("TTS_VOICE_PITCH", "95"))  # Тональність
+    TTS_VOICE_SPEED = int(os.getenv("TTS_VOICE_SPEED", "180"))
+    TTS_VOICE = os.getenv("TTS_VOICE", "echo")  # Для OpenAI: echo, alloy, fable, onyx, nova, shimmer
+
 
 settings = Settings()

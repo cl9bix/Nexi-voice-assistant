@@ -1,42 +1,40 @@
-# test_jarvis_sound.py
-import pyttsx3
+# test_openai_tts.py
+import os
+from openai import OpenAI
+from pathlib import Path
+import subprocess
 
-print("🎯 Прямой тест TTS для Юрия")
-print("=" * 50)
+print("🎯 Тест OpenAI TTS для Юрия")
+
+# Встанови свій ключ
+os.environ["OPENAI_API_KEY"] = "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"
 
 try:
-    # Ініціалізація
-    engine = pyttsx3.init()
-    print("✅ Pyttsx3 инициализирован")
+    client = OpenAI()
 
-    # Перевірка голосів
-    voices = engine.getProperty('voices')
-    print(f"📢 Найдено голосов: {len(voices)}")
+    print("✅ OpenAI клиент инициализирован")
 
-    for i, voice in enumerate(voices):
-        print(f"  Голос {i}: {voice.name} ({voice.languages if hasattr(voice, 'languages') else 'unknown'})")
+    # Генеруємо тестовий файл
+    response = client.audio.speech.create(
+        model="tts-1",
+        voice="echo",
+        input="Юрий, это тест OpenAI TTS. Если ты слышишь меня, значит все работает отлично!"
+    )
 
-    # Встановлення параметрів
-    engine.setProperty('rate', 160)
-    engine.setProperty('volume', 1.0)  # Максимальна гучність
+    # Зберігаємо тимчасовий файл
+    temp_file = Path("test_openai.mp3")
+    response.stream_to_file(str(temp_file))
 
-    # Вибираємо перший доступний голос
-    if voices:
-        engine.setProperty('voice', voices[0].id)
-        print(f"✅ Использую голос: {voices[0].name}")
+    print(f"✅ Аудио файл создан: {temp_file}")
+    print("🔊 Воспроизвожду...")
 
-    print("\n🔊 Тестирую звук...")
-    print("Если ты слышишь: 'Юрий, это тест, я работаю!' - значит все OK")
+    # Відтворюємо
+    os.startfile(str(temp_file))
 
-    # Тестове повідомлення
-    engine.say("Юрий, это тест, я работаю!")
-    engine.runAndWait()
-
-    print("✅ Тест завершен!")
+    print("✅ Тест OpenAI TTS завершен!")
 
 except Exception as e:
     print(f"❌ Ошибка: {e}")
-    print(f"Тип ошибки: {type(e).__name__}")
 
 print("\nНажми Enter для выхода...")
 input()

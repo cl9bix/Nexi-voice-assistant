@@ -22,65 +22,43 @@ class LocalTTSService:
     def _init_engine(self):
         """Ініціалізація локального TTS движка"""
         try:
+            logger.info("🎯 Начало инициализации TTS движка...")
             self.engine = pyttsx3.init()
+            logger.info("✅ Pyttsx3 инициализирован")
+
             self._configure_voice()
-            self.engine.setProperty('rate', 180)  # Швидкість мови
-            self.engine.setProperty('volume', 0.9)  # Гучність
 
-            # Персоналізація для Юрія
-            self.engine.setProperty('pitch', 105)  # Тональність голосу
+            # Параметри з логуванням
+            self.engine.setProperty('rate', settings.TTS_VOICE_SPEED)
+            logger.info(f"📢 Скорость установлена: {settings.TTS_VOICE_SPEED}")
 
-            logger.info(f"Local TTS инициализирован для {VOICE_ASSISTANT_NAME}")
+            self.engine.setProperty('volume', 1.0)  # МАКСИМАЛЬНА громкость!
+            logger.info("🔊 Громкость установлена: 100%")
+
+            logger.info(f"✅ TTS движок готов для {VOICE_ASSISTANT_NAME}")
 
         except Exception as e:
-            logger.error(f"Ошибка инициализации локального TTS: {e}")
-            # Fallback на стандартний голос
+            logger.error(f"❌ Ошибка инициализации TTS: {e}")
             self.engine = pyttsx3.init()
 
     def _configure_voice(self):
-        """Налаштування голосу для русської мови"""
-        voices = self.engine.getProperty('voices')
-
-        # Шукаємо русский або український голос
-        target_voice = None
-        for voice in voices:
-            voice_name = voice.name.lower()
-            if any(lang in voice_name for lang in ['russian', 'русский', 'ukrainian', 'украинский']):
-                target_voice = voice.id
-                logger.info(f"Найден русский/украинский голос: {voice.name}")
-                break
-
-        # Якщо не знайшли - шукаємо англійський але з хорошою вимовою
-        if not target_voice:
-            for voice in voices:
-                if 'english' in voice.name.lower() or 'en' in voice.name.lower():
-                    target_voice = voice.id
-                    logger.info(f"Используем английский голос: {voice.name}")
-                    break
-
-        # Встановлюємо знайдений голос
-        if target_voice:
-            self.engine.setProperty('voice', target_voice)
-        else:
-            logger.warning("Не найден подходящий голос, используется стандартный")
-
-    def _init_engine(self):
-        """Ініціалізація локального TTS движка"""
+        """Налаштування голосу з логуванням"""
         try:
-            self.engine = pyttsx3.init()
-            self._configure_voice()
-            self.engine.setProperty('rate', 180)  # Швидкість мови
-            self.engine.setProperty('volume', 0.9)  # Гучність
+            voices = self.engine.getProperty('voices')
+            logger.info(f"📢 Найдено голосов: {len(voices)}")
 
-            # ПРИБИРАЄМО ЦЮ ЛІНІЮ:
-            # self.engine.setProperty('pitch', 105)  # <--- ПРИБРАТИ!
+            for i, voice in enumerate(voices):
+                logger.info(f"  Голос {i}: {voice.name}")
 
-            logger.info(f"Local TTS инициализирован для {VOICE_ASSISTANT_NAME}")
+            # Вибираємо перший доступний
+            if voices:
+                self.engine.setProperty('voice', voices[0].id)
+                logger.info(f"✅ Использую голос: {voices[0].name}")
+            else:
+                logger.warning("⚠️ Нет доступных голосов")
 
         except Exception as e:
-            logger.error(f"Ошибка инициализации локального TTS: {e}")
-            # Fallback на стандартний голос
-            self.engine = pyttsx3.init()
+            logger.error(f"❌ Ошибка конфигурации голоса: {e}")
 
     def _start_worker(self):
         """Запуск робочого потоку для озвучення"""
@@ -100,45 +78,34 @@ class LocalTTSService:
         self.thread.start()
 
     def _speak(self, text: str):
-        """Озвучення тексту локальним движком з емоційною інтонацією"""
+        """Озвучення з максимальним логуванням"""
         if not self.engine:
+            logger.error("❌ Движок TTS не инициализирован!")
             return
 
         try:
             self.speaking = True
+            logger.info(f"🔊 Начинаю озвучивание: {text[:50]}...")
 
-            # Персоналізація тексту для Юрія
+            # Персоналізація
             personalized_text = self._personalize_text(text)
+            logger.info(f"📝 Персонализированный текст: {personalized_text[:50]}...")
 
-            logger.info(f"🔊 Local TTS: {personalized_text[:100]}...")
-
-            # Емоційна інтонація через швидкість:
-            if "привет" in personalized_text.lower() or "доброе" in personalized_text.lower():
-                # Вітальна інтонація - трохи швидше та жвавіше
-                self.engine.setProperty('rate', 190)
-            elif "спасибо" in personalized_text.lower() or "отлично" in personalized_text.lower():
-                # Позитивна інтонація - середня швидкість
-                self.engine.setProperty('rate', 175)
-            elif "ошибка" in personalized_text.lower() or "проблема" in personalized_text.lower():
-                # Повільніше для серйозних повідомлень
-                self.engine.setProperty('rate', 160)
-            else:
-                # Нормальна швидкість
-                self.engine.setProperty('rate', 180)
-
-            # Додаємо паузи для кращого сприйняття
-            if "!" in personalized_text:
-                personalized_text = personalized_text.replace("!", "... ")
-            if "?" in personalized_text:
-                personalized_text = personalized_text.replace("?", "... ")
+            # Виводимо властивості перед озвученням
+            rate = self.engine.getProperty('rate')
+            volume = self.engine.getProperty('volume')
+            logger.info(f"📊 Текущие настройки: rate={rate}, volume={volume}")
 
             self.engine.say(personalized_text)
+            logger.info("📢 Отправляю текст в движок...")
+
             self.engine.runAndWait()
+            logger.info("✅ Озвучивание завершено")
 
             self.speaking = False
 
         except Exception as e:
-            logger.error(f"Ошибка озвучивания: {e}")
+            logger.error(f"❌ Ошибка озвучивания: {e}")
             self.speaking = False
 
     def _personalize_text(self, text: str) -> str:
@@ -199,23 +166,23 @@ class LocalTTSService:
         return True
 
     def speak_immediately(self, text: str) -> bool:
-        """Блокуюче озвучення (чекає закінчення)"""
-        if not text:
-            return False
-
+        """Блокуюче озвучення з логами"""
         try:
+            logger.info(f"🔊 Немедленное озвучивание: {text}")
+
             personalized_text = self._personalize_text(text)
-            logger.info(f"🔊 Local TTS (immediate): {personalized_text[:100]}...")
 
             self.speaking = True
             self.engine.say(personalized_text)
+            logger.info("📢 Запуск runAndWait...")
             self.engine.runAndWait()
+            logger.info("✅ Немедленное озвучивание завершено")
             self.speaking = False
 
             return True
 
         except Exception as e:
-            logger.error(f"Ошибка немедленного озвучивания: {e}")
+            logger.error(f"❌ Ошибка немедленного озвучивания: {e}")
             self.speaking = False
             return False
 
@@ -238,10 +205,10 @@ class LocalTTSService:
                 self.thread.join(timeout=2)
 
             self.speaking = False
-            logger.info("Local TTS остановлен")
+            logger.info("✅ Local TTS остановлен")
 
         except Exception as e:
-            logger.error(f"Ошибка остановки TTS: {e}")
+            logger.error(f"❌ Ошибка остановки TTS: {e}")
 
     def clear_queue(self):
         """Очищення черги озвучення"""
@@ -260,21 +227,20 @@ class LocalTTSService:
         try:
             if self.engine and voice_id:
                 self.engine.setProperty('voice', voice_id)
-                logger.info(f"Голос изменен на: {voice_id}")
+                logger.info(f"✅ Голос изменен на: {voice_id}")
         except Exception as e:
-            logger.error(f"Ошибка смены голоса: {e}")
+            logger.error(f"❌ Ошибка смены голоса: {e}")
 
     def set_speed(self, speed: int):
         """Зміна швидкості мови"""
         try:
             if self.engine:
                 self.engine.setProperty('rate', speed)
-                logger.info(f"Скорость речи изменена на: {speed}")
+                logger.info(f"✅ Скорость речи изменена на: {speed}")
         except Exception as e:
-            logger.error(f"Ошибка изменения скорости: {e}")
+            logger.error(f"❌ Ошибка изменения скорости: {e}")
 
 
 # Адаптер для сумісності
 class TTSService(LocalTTSService):
-    """Адаптер для сумісності - просто наслідуємо LocalTTSService"""
     pass
