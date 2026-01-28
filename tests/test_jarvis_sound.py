@@ -7,7 +7,7 @@ import subprocess
 print("🎯 Тест OpenAI TTS для Юрия")
 
 # Встанови свій ключ
-os.environ["OPENAI_API_KEY"] = "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"
+# os.environ["OPENAI_API_KEY"] = "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"
 
 try:
     client = OpenAI()
